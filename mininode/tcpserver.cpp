@@ -119,23 +119,25 @@ void TCPServer::acceptConnections() {
     //Execute the connection function
     //Create a C++ socket object
     //Hand it to the socket storage for polling / processing
+    vectMutex.lock();
     Socket accepted_socket (new_fd, hostname, std::to_string(port));
     socketVector.push_back(accepted_socket);
 
     socketFunction(socketVector.back());
+    vectMutex.unlock();
   }
 }
 
 void TCPServer::processConnections() {
 
   std::cout << "Processing connections" << std::endl;
-  unsigned waittime = 1;
+  unsigned waittime = 100;
   unsigned maxwaittime = 100000;
 
   while(true) {
 
     for(unsigned i = 0; i < socketVector.size(); i++) {
-
+      vectMutex.lock();
       Socket& s = socketVector.at(i);
 
       ssize_t received = recv(s.fileDescriptor, s.buffer, sizeof(s.buffer), 0);
@@ -146,19 +148,19 @@ void TCPServer::processConnections() {
         close(s.fileDescriptor);
         socketVector.erase(socketVector.begin()+i);
 
-        waittime = 0;
+        waittime = 100;
       }
       else if(received != -1) {
         // Socket received data
 
         Data d (std::string(s.buffer, received));
         s.dataFunction(d);
-        waittime = 0;
+        waittime = 100;
       } else {
         // Increase the wait period up to a maximum
         waittime = std::min(waittime * 2, maxwaittime);
       }
-
+      vectMutex.unlock();
       usleep(waittime);
     }
 

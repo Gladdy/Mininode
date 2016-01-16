@@ -8,6 +8,8 @@
 #include <vector>
 #include <thread>
 #include <netdb.h>
+#include <mutex>
+
 
 class TCPServer {
 	friend class Socket;
@@ -31,6 +33,7 @@ private:
 	std::vector<Socket> socketVector;
 
 	static uint32_t activeCounter;
+	std::mutex vectMutex;
 };
 
 
